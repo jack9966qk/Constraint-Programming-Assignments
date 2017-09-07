@@ -1,0 +1,12 @@
+output ((((((["%"]++[(" "++ter[fix(terrain[r,c])])++if c==ncol then "\n%" else "" endif | r in ROW, c in COL, ])++["\n%"])++[if soldier[r,c] > 0 then show_int(2,soldier[r,c]) else " ." endif++if c==ncol then "\n%" else "" endif | r in ROW, c in COL, ])++["\n"])++["%"])++[if fix(visit[r,c]) > 0 then show_int(2,visit[r,c]) else " ." endif++if c==ncol then "\n%" else "" endif | r in ROW, c in COL, ])++["\nvisit = array2d(ROW,COL,"++format(visit)++");\nsteps = "++format(steps)++";\ntime = "++format(time)++";\nobj = "++format(obj)++";"];
+set of int: ROW = 1..6;
+int: ncol = 6;
+set of int: COL = 1..6;
+set of int: TERRAIN = 1..5;
+array [ROW,COL] of int: terrain = [|1,1,1,5,4,3|1,2,2,3,2,4|1,2,1,3,3,1|1,2,1,2,2,4|1,2,1,2,1,3|1,1,1,2,1,3|];
+array [ROW,COL] of int: soldier = [|0,0,0,0,0,0|0,0,0,5,0,0|0,0,0,0,1,0|0,0,0,0,0,1|0,0,0,0,0,0|0,0,0,0,0,0|];
+int: steps;
+array [ROW,COL] of int: visit;
+int: time;
+int: obj;
+array [TERRAIN] of string: ter = [".","#","^","C","~"];

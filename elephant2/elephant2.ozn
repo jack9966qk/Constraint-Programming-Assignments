@@ -1,0 +1,7 @@
+output ["act = array2d(1..4 ,1..10 ,",show(act),");\n","end = ",show(end),";\n","boat = array1d(1..10 ,",show(boat),");\n","onboat = array2d(1..4 ,1..10 ,",show(onboat),");\n"];
+set of int: TIME = 1..10;
+set of int: GUARD = 1..4;
+array [GUARD,TIME] of int: act;
+int: end;
+array [TIME] of int: boat;
+array [GUARD,TIME] of bool: onboat;

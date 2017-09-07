@@ -1,0 +1,6 @@
+output ["%"]++[if fix(visit[p]) > 0 then show_int(2,fix(visit[p])) else " ." endif++if get_col(p)==ncol then "\n%" else "" endif | p in POS, ];
+function COL : get_col(POS: pos) = (pos-1) mod ncol+1;
+int: ncol = 5;
+set of int: COL = 1..5;
+set of int: POS = 1..25;
+array [POS] of int: visit;

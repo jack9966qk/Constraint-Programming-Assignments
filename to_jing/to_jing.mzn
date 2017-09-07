@@ -26,14 +26,25 @@ set of int: STEP0 = 0..maxstep;
 var STEP: steps;
 array[ROW,COL] of var STEP0: visit; % which step do we visit position or 0 if not visited
 
-% constraint visit = array2d(ROW,COL,[1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 11, 12, 13, 14, 4, 0, 10, 0, 0, 15, 5, 0, 9, 0, 0, 16, 6, 7, 8, 0, 0, 17]);
-
-
 % ========= added representation ==========
+
+int: rowlo = if start_row - maxstep < 1 then 1 else start_row - maxstep endif;
+int: rowhi = if start_row + maxstep > nrow then nrow else start_row + maxstep endif;
+int: collo = if start_col - maxstep < 1 then 1 else start_col - maxstep endif;
+int: colhi = if start_col + maxstep > ncol then ncol else start_col + maxstep endif;
+
+% constraint true = trace("\(rowlo), \(rowhi), \(collo), \(colhi)\n", true);
+
+constraint forall(r in ROW, c in COL)(
+  (r in rowlo..rowhi) \/ (c in collo..colhi) \/ (visit[r, c] = 0)
+);
+
+int: nrowx = rowhi - rowlo + 1;
+int: ncolx = colhi - collo + 1;
+
 int: npos = nrow * ncol;
 set of int: POS = 1..npos;
-% set of int: POS0 = 0..npos;
-array[STEP] of var POS: positions;
+set of int: POS0 = 0..npos;
 
 function var int: get_pos(var ROW: row, var COL: col) = (row - 1) * ncol + (col - 1) + 1;
 function var int: get_row(var POS: pos) = (pos - 1) div ncol + 1;
@@ -41,40 +52,37 @@ function var int: get_col(var POS: pos) = (pos - 1) mod ncol + 1;
 function var int: get_row_of_step(var STEP: s) = get_row(positions[s]);
 function var int: get_col_of_step(var STEP: s) = get_col(positions[s]);
 
-
-function POS: get_pos(ROW: row, COL: col) = (row - 1) * ncol + (col - 1) + 1;
 function ROW: get_row(POS: pos) = (pos - 1) div ncol + 1;
 function COL: get_col(POS: pos) = (pos - 1) mod ncol + 1;
+function POS: get_pos(ROW: row, COL: col) = (row - 1) * ncol + (col - 1) + 1;
 
-function bool: is_mountain(POS: pos) = (terrain[get_row(pos), get_col(pos)] = M);
-function bool: is_mountain(ROW: row, COL: col) = (terrain[row, col] = M);
 
-function array[int] of int: make_edges(int: pos) = if pos <= npos
-  then (if is_mountain(pos) then [] else make_edge(pos) endif) ++ make_edges(pos + 1)
-  else []
+int: njings = sum(r in ROW, c in COL)(Jin[r, c] = true);
+int: nedges = nrowx * ncolx * 4 + 1;
+
+
+array[1..nedges * 2] of POS0: edges1d = make_edges(1);
+array[1..nedges, 1..2] of POS0: edges2d = array2d(1..nedges, 1..2, edges1d);
+
+function array[int] of POS0: make_edges(int: pos) =
+  if pos > npos then [0, 0] else
+    let { int: row = get_row(pos), int: col = get_col(pos),
+      bool: t = trace("\(row), \(col), \(pos), \(npos)\n", true) } in
+    if Jin[row, col] then [pos, 0, pos, 0, pos, 0, pos, 0] else
+      if (not (row in rowlo..rowhi)) \/ (not (col in collo..colhi)) then [] else
+        (if (row > 1 /\ terrain[row-1, col] != M) then [pos, get_pos(row-1, col)] else [0, 0] endif) ++
+        (if (row < nrow /\ terrain[row+1, col] != M) then [pos, get_pos(row+1, col)] else [0, 0] endif) ++
+        (if (col > 1 /\ terrain[row, col-1] != M) then [pos, get_pos(row, col-1)] else [0, 0] endif) ++
+        (if (col < ncol /\ terrain[row, col+1] != M) then [pos, get_pos(row, col+1)] else [0, 0] endif)
+      endif
+    endif ++
+    make_edges(pos + 1)
   endif;
 
-function array[int] of int: make_edge(int: pos) = let { int: row = get_row(pos), int: col = get_col(pos) } in
-  (if row > 1 /\ (not is_mountain(row - 1, col)) then [pos, get_pos(row - 1, col)] else [] endif) ++
-  (if col > 1 /\ (not is_mountain(row, col - 1)) then [pos, get_pos(row, col - 1)] else [] endif) ++
-  (if row < nrow /\ (not is_mountain(row + 1, col)) then [pos, get_pos(row + 1, col)] else [] endif) ++
-  (if col < ncol /\ (not is_mountain(row, col + 1)) then [pos, get_pos(row, col + 1)] else [] endif);
-  
-array[int] of POS: edges;
-edges = make_edges(1);
+array[STEP] of var POS0: positions;
 
-array[int, int] of POS: edges2d;
-edges2d = array2d(1..(length(edges) div 2), 1..2, edges);
-
-% var int: r;
-% var int: c;
-% constraint get_col_of_step(1) = c;
-% constraint get_row_of_step(1) = r;
-% constraint positions[1] = 14;
-
-% var STEP: arr_step;
-% constraint arr_step = max(array1d(POS, visit));
-% constraint forall(s in steps+1..maxstep)(visit[get_row_of_step(s), get_col_of_step(s)] = 0);
+constraint forall(s in steps+1..maxstep)(positions[s] = 0);
+constraint forall(s in 1..steps)(positions[s] != 0);
 
 % ========= channel representations ==========
 constraint forall(s in 1..steps)(
@@ -100,17 +108,17 @@ constraint sum(r in ROW, c in COL)(visit[r,c] >= 1) <= steps;
 constraint Jin[get_row_of_step(steps), get_col_of_step(steps)] = true;
 
 % visit at most one city
-% constraint not exists(r1,r2 in ROW, c1,c2 in COL)
-%                      ((r1 != r2 \/ c1 != c2) 
-%                       /\ terrain[r1,c1] = C /\ terrain[r2,c2] = C 
-%                       /\ visit[r1,c1] >= 1 /\ visit[r2,c2] >= 1);
+constraint not exists(r1,r2 in ROW, c1,c2 in COL)
+                     ((r1 != r2 \/ c1 != c2) 
+                      /\ terrain[r1,c1] = C /\ terrain[r2,c2] = C 
+                      /\ visit[r1,c1] >= 1 /\ visit[r2,c2] >= 1);
 % =================
 constraint sum(s in 1..steps)(terrain[get_row_of_step(s), get_col_of_step(s)] = C) < 2;
 
 % cant enter Mountain
 constraint not exists(r in ROW, c in COL)(terrain[r,c] = M /\ visit[r,c] >= 1);
 % =================
-constraint not exists(s in 1..steps)(terrain[get_row_of_step(s), get_col_of_step(s)] = M);
+constraint forall(s in 1..steps)(terrain[get_row_of_step(s), get_col_of_step(s)] != M);
 
 % visit only one place in every step
 % constraint forall(r1,r2 in ROW, c1,c2 in COL)
@@ -119,7 +127,7 @@ constraint not exists(s in 1..steps)(terrain[get_row_of_step(s), get_col_of_step
 %                       \/ visit[r2,c2] != visit[r1,c1]));
 % =================
 % constraint forall(i, j in 1..steps where i < j)(positions[i] != positions[j]);
-% constraint alldifferent_except_0([positions[s] | s in 1..steps]);
+constraint alldifferent_except_0(positions);
 
 % steps form a path
 % constraint forall(s in 1..steps-1)
@@ -144,17 +152,19 @@ constraint forall(s in 1..steps-1)(
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% include "table.mzn";
-% constraint forall(s in 1..steps - 1)(
-%   table([positions[s], positions[s+1]], edges2d)
-% );
+include "table.mzn";
+constraint forall(s in 1..maxstep-1)(
+  table([positions[s], positions[s+1]], edges2d)
+);
+
+% constraint true = trace("\(edges2d)\n", true);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % not too much delay
 constraint time <= timelimit;
 var int: time;
-% var int: time = sum(r in ROW, c in COL)(delay[terrain[r,c]]*(visit[r,c] >= 1));
+constraint time = sum(r in ROW, c in COL)(delay[terrain[r,c]]*(visit[r,c] >= 1));
 % =================
 constraint time = sum(s in 1..steps)(delay[terrain[get_row_of_step(s), get_col_of_step(s)]]);
 
@@ -182,8 +192,3 @@ output
        | r in ROW, c in COL ]
        ++ ["\nvisit = array2d(ROW,COL,\(visit));\nsteps = \(steps);\ntime = \(time);\nobj = \(obj);"]
        ;
-
-% output ["\(npos)"]
-
-array[1..(length(edges) div 2), 1..2] of var int: vedges;
-constraint forall(i in 1..(length(edges) div 2), j in 1..2)(vedges[i, j] = edges2d[i, j]);
