@@ -1,7 +1,6 @@
-output ["act = array2d(1..4 ,1..10 ,",show(act),");\n","end = ",show(end),";\n","boat = array1d(1..10 ,",show(boat),");\n","onboat = array2d(1..4 ,1..10 ,",show(onboat),");\n"];
+output ((["act = array2d(GUARD, TIME, [\n"]++[show_int(2,fix(act[g,t]))++if t==T then ",\n" else ", " endif | g in GUARD, t in TIME, ])++["]);\n"])++["end = "++format(end)++";"];
+int: T = 10;
 set of int: TIME = 1..10;
-set of int: GUARD = 1..4;
+set of int: GUARD = 1..8;
 array [GUARD,TIME] of int: act;
 int: end;
-array [TIME] of int: boat;
-array [GUARD,TIME] of bool: onboat;
