@@ -35,9 +35,9 @@ array[MEETING] of var TIME: start;
 array[MEETING] of var TIME: dur;    % duration in false schedule
 array[MEETING] of var ROOM: room;
 set of int: KUNGFU = 1..n;
-array[KUNGFU] of var int: kungfu;  % start time for each lesson
+int: unused = 24*ndays+1;
+array[KUNGFU] of var 0..unused: kungfu;  % start time for each lesson
    % unused lessons have start times after 24*ndays
-
 
 %%%%%%%%%%%%%%%%%% STAGE A
 
@@ -75,15 +75,15 @@ solve maximize obj;
 
 constraint (stage != C) -> forall(i in KUNGFU)(kungfu[i] = 24*ndays + 1);
 
-% output ["start = \(start);\n"] ++
-%        ["dur = \(dur);\n"] ++
-%        ["room = \(room);\n"] ++
-%        ["kungfu = \(kungfu);\n"] ++
-%     %    ["truedur = \(truedur);\n"] ++
-%        ["obj = \(obj);"];
+output ["start = \(start);\n"] ++
+       ["dur = \(dur);\n"] ++
+       ["room = \(room);\n"] ++
+       ["kungfu = \(kungfu);\n"] ++
+    %    ["truedur = \(truedur);\n"] ++
+       ["obj = \(obj);"];
 
 %%%%%%%%%%%%%%%%%% STAGE B
-constraint (stage = B) -> forall(i, j in MEETING where room[i] != room[j])(
+constraint (stage != A) -> forall(i, j in MEETING where room[i] != room[j])(
     (start[i] < start[j]) -> (
         let { var ROOM: ri = room[i]; var ROOM: rj = room[j] } in
         start[i] + dur[i] + move[ri, rj] <= start[j]
@@ -94,13 +94,26 @@ constraint (stage = B) -> forall(i, j in MEETING where room[i] != room[j])(
 %%%%%%%%%%%%%%%%%% STAGE C
 array[MEETING] of var TIME: truedur;    % duration in true schedule
 
-function var TIME: get_truedur(var MEETING: m, MEETING: k) =
+constraint (stage = C) -> forall(i in KUNGFU)(
+    (kungfu[i] = unused) \/
+    exists(m in MEETING)(kungfu[i] + lessontime = start[m] + dur[m])
+);
+
+include "increasing.mzn";
+constraint (stage = C) -> increasing(kungfu);
+
+constraint (stage = C) -> forall(i in 1..n-1)(
+    (kungfu[i] = unused) \/ (kungfu[i+1] = unused) \/
+    (kungfu[i] + lessontime + minsep <= kungfu[i+1])
+);
+
+function var TIME: get_truedur(MEETING: m, 1..n+1: k) =
     if k > n
     then dur[m]
     else
-        if kungfu[k] < start[m]
-        then get_truedur(m, k+1)
-        else min(dur[m], kungfu[k] - start[m])
+        if kungfu[k] > dur[m]
+        then min(dur[m], kungfu[k] - start[m])
+        else get_truedur(m, k+1)
         endif
     endif;
 
@@ -108,21 +121,9 @@ constraint (stage = C) -> forall(m in MEETING)(
     truedur[m] = get_truedur(m, 1)
 );
 
-constraint (stage != C) -> truedur = dur;
-
 constraint (stage = C) -> forall(m in MEETING)(
-    (truedur[m] >= mintime[suitor[m], room[m]]) /\
-    (truedur[m] <= dur[m])
+    truedur[m] >= mintime[suitor[m], room[m]]
 );
 
-% put in lessions
-constraint (stage = C) -> forall(i in 1..n-1)(kungfu[i] + lessontime + minsep <= kungfu[i+1]);
-constraint (stage = C) -> forall(i in KUNGFU)(
-    (kungfu[i] > 24*ndays) \/
-    exists(m in MEETING)(kungfu[i] > start[m] /\ kungfu[i] < start[m] + dur[m])
-);
-
-% constraint start = [8, 16, 36, 32, 13, 38];
-% constraint dur = [4, 2, 2, 3, 3, 3];
-% constraint kungfu = [11, 17, 34, 49, 52, 55];
-% constraint obj = 304;
+constraint (stage != C) -> forall(i in KUNGFU)(kungfu[i] = unused);
+constraint (stage != C) -> forall(m in MEETING)(truedur[m] = dur[m]);
