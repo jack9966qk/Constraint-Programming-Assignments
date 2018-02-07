@@ -1,0 +1,8 @@
+output ((((((((["x = ["]++fix([if i < total_ships then ""++format(x[i])++", " else ""++format(x[i])++"" endif | i in SHIP, ]))++["];\n"])++["y = ["])++fix([if i < total_ships then ""++format(y[i])++", " else ""++format(y[i])++"" endif | i in SHIP, ]))++["];\n"])++["k = ["])++fix([if i < total_ships then ""++format(if k[i]==nshapes+1 then 0 else k[i] endif)++", " else ""++format(if k[i]==nshapes+1 then 0 else k[i] endif)++"" endif | i in SHIP, ]))++["];\n"])++["tarrows = "++format(tarrows)++";"];
+int: nshapes = 7;
+int: total_ships = 9;
+set of int: SHIP = 1..9;
+array [SHIP] of int: x;
+array [SHIP] of int: y;
+array [SHIP] of int: k;
+int: tarrows;

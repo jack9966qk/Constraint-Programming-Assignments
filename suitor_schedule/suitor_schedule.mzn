@@ -83,12 +83,21 @@ output ["start = \(start);\n"] ++
        ["obj = \(obj);"];
 
 %%%%%%%%%%%%%%%%%% STAGE B
-constraint (stage != A) -> forall(i, j in MEETING where room[i] != room[j])(
-    (start[i] < start[j]) -> (
-        let { var ROOM: ri = room[i]; var ROOM: rj = room[j] } in
-        start[i] + dur[i] + move[ri, rj] <= start[j]
-    )
+array[MEETING] of var TIME: fulldur;
+
+constraint (stage != A) -> forall(i in 1..n-1)(
+    fulldur[i] = dur[i] + move[room[i], room[i+1]]
 );
+constraint (stage != A) -> fulldur[n] = dur[n];
+
+constraint (stage != A) -> disjunctive(start, fulldur);
+
+% constraint (stage != A) -> forall(i, j in MEETING where room[i] != room[j])(
+%     (start[i] < start[j]) -> (
+%         let { var ROOM: ri = room[i]; var ROOM: rj = room[j] } in
+%         start[i] + dur[i] + move[ri, rj] <= start[j]
+%     )
+% );
 
 
 %%%%%%%%%%%%%%%%%% STAGE C

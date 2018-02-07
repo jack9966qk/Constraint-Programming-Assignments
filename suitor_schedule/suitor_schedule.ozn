@@ -1,12 +1,12 @@
 output (((["start = "++format(start)++";\n"]++["dur = "++format(dur)++";\n"])++["room = "++_toString_ROOM(room,false)++";\n"])++["kungfu = "++format(kungfu)++";\n"])++["obj = "++format(obj)++";"];
 function string : _toString_ROOM(array [$U] of ROOM: x,bool: b) = let {array [int] of int: xx = array1d(x)} in (("["++join(", ",[_toString_ROOM(xx[i],b) | i in index_set(xx), ]))++"]");
 function string : _toString_ROOM(int: x,bool: b) = _enum_to_string_ROOM[x];
-set of int: MEETING = 1..6;
+set of int: MEETING = 1..15;
 set of int: ROOM = 1..3;
 array [MEETING] of int: start;
 array [MEETING] of int: dur;
 array [MEETING] of int: room;
-set of int: KUNGFU = 1..6;
+set of int: KUNGFU = 1..15;
 array [KUNGFU] of int: kungfu;
 int: obj;
 array [1..3] of string: _enum_to_string_ROOM = ["Red","Gold","Blue"];
